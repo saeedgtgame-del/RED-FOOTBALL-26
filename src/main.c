@@ -89,7 +89,7 @@ static void updatePad(void){
   if(!(pad.btns&PAD_LEFT))ax=-1;if(!(pad.btns&PAD_RIGHT))ax=1;if(!(pad.btns&PAD_UP))ay=-1;if(!(pad.btns&PAD_DOWN))ay=1;
   in.moveX=ax;in.moveZ=-ay;if(!(pad.btns&PAD_CROSS))in.held=1;
   start=!(pad.btns&PAD_START);pass=!(pad.btns&PAD_SQUARE);shot=!(pad.btns&PAD_CIRCLE);sw=!(pad.btns&PAD_TRIANGLE);
-  if(start&&!lastStart){if(!started)started=1;else paused=!paused;}lastStart=start;
+  if(start&&!lastStart){if(gameOver){scoreA=0;scoreB=0;matchClock=0;gameOver=0;resetPositions();started=1;paused=0;}else if(!started){started=1;paused=0;}else paused=!paused;}lastStart=start;
   if(pass&&!lastPass&&started&&!paused){NX_Entity *e=&scene.entities[playerIds[0][selected]];ballVX=(e->transform.position.x-ballX)*.22f;ballVZ=(e->transform.position.z-ballZ)*.22f;ballVX+=0;ballVZ+=(e->transform.position.z<0? -16.0f:16.0f); }lastPass=pass;
   if(shot&&!lastShot&&started&&!paused){NX_Entity *e=&scene.entities[playerIds[0][selected]];float dx=ballX-e->transform.position.x,dz=ballZ-e->transform.position.z;float len=sqrtf(dx*dx+dz*dz);if(len<8){ballVX=(dx/(len+0.01f))*7.0f;ballVZ=24.0f;ballVY=4.5f;}}lastShot=shot;
   if(sw&&!lastSwitch&&started&&!paused){int i,best=0;float bd=1e9f;for(i=1;i<TEAM_N;i++){NX_Entity *e=&scene.entities[playerIds[0][i]];float d=dist2(e->transform.position.x,e->transform.position.z,ballX,ballZ);if(d<bd){bd=d;best=i;}}selected=best;nx_set_player(&scene,playerIds[0][selected]);}lastSwitch=sw;
