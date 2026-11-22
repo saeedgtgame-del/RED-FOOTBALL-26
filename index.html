@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>RED FOOTBALL 26</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#10131a;color:#fff;font-family:Tahoma,Arial;overflow:hidden}#app{height:100dvh;display:flex;flex-direction:column;gap:8px;padding:10px;max-width:1100px;margin:auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px}h1{font-size:clamp(17px,3vw,25px);margin:0;color:#ff4545}button,select{background:#252c38;color:white;border:1px solid #485365;border-radius:10px;padding:9px 12px;font:inherit}button:active{transform:scale(.96);background:#b3222d}
+#hud{display:flex;justify-content:center;align-items:center;gap:18px;background:#202631;border-radius:12px;padding:8px;font-weight:bold}.score{font-size:25px;color:#ff5555}#clock{font-variant-numeric:tabular-nums}
+#field{position:relative;flex:1;min-height:180px;border:4px solid #eee;border-radius:8px;overflow:hidden;background:repeating-linear-gradient(90deg,#187b43 0,#187b43 10%,#20894d 10%,#20894d 20%)}canvas{width:100%;height:100%;display:block}
+#panel{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}.small{font-size:12px;color:#bac3d0;text-align:center}
+#controls{display:flex;justify-content:space-between;gap:20px;direction:ltr;min-height:94px}.pad{display:grid;grid-template-columns:repeat(3,43px);grid-template-rows:repeat(2,40px);gap:4px}.pad button{padding:2px;font-size:17px;touch-action:none}.actions{display:flex;gap:8px;align-items:center}.actions button{height:70px;min-width:66px;border-radius:50%;background:#a51f2b;font-weight:bold;touch-action:none}
+@media(min-width:750px){#controls{display:none}.small:after{content:" | بازیکن۱: WASD + Space | بازیکن۲: کلیدهای جهت + Enter"}}
+</style></head>
+<body><main id="app">
+<header><h1>⚽ RED FOOTBALL 26</h1><span class="small">نسخه آزمایشی ۰.۱</span></header>
+<div id="hud"><span id="leftName">تراکتور</span><span class="score" id="score">۰ - ۰</span><span id="rightName">رئال مادرید</span><span id="clock">۰۰:۰۰</span></div>
+<div id="field"><canvas id="game"></canvas></div>
+<div id="panel"><select id="mode"><option value="ai">تک‌نفره مقابل هوش مصنوعی</option><option value="pvp">دو نفره محلی</option></select>
+<select id="team1"><option>تراکتور</option><option>ایران</option><option>رئال مادرید</option><option>بارسلونا</option><option>لیورپول</option><option>بایرن مونیخ</option></select>
+<select id="team2"><option>رئال مادرید</option><option>تراکتور</option><option>ایران</option><option>بارسلونا</option><option>منچسترسیتی</option><option>پاری‌سن‌ژرمن</option></select>
+<button id="start">شروع مسابقه</button><button id="reset">شروع مجدد</button></div>
+<div class="small" id="comment">گزارشگر: به RED FOOTBALL 26 خوش آمدید! برای شروع مسابقه دکمه شروع را بزنید.</div>
+<div id="controls">
+<div style="display:flex;gap:5px"><div class="pad"><span></span><button data-key="w">▲</button><span></span><button data-key="a">◀</button><button data-key="s">▼</button><button data-key="d">▶</button></div><div class="actions"><button data-key=" ">شوت</button></div></div>
+<div style="display:flex;gap:5px"><div class="actions"><button data-key="Enter">شوت</button></div><div class="pad"><span></span><button data-key="ArrowUp">▲</button><span></span><button data-key="ArrowLeft">◀</button><button data-key="ArrowDown">▼</button><button data-key="ArrowRight">▶</button></div></div>
+</div></main>
+<script>
+(()=>{const c=document.getElementById('game'),ctx=c.getContext('2d'),$=id=>document.getElementById(id);
+let W=900,H=500,players=[],ball={x:450,y:250,vx:0,vy:0},score=[0,0],time=0,running=false,last=0,keys={},commentTimer=0;
+const fa=n=>String(n).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
+function size(){let r=c.getBoundingClientRect();W=c.width=Math.max(300,r.width*devicePixelRatio);H=c.height=Math.max(180,r.height*devicePixelRatio);ctx.setTransform(1,0,0,1,0,0)}
+function setup(){players=[{x:W*.22,y:H*.5,r:Math.min(W,H)*.035,color:'#e52d38',vx:0,vy:0},{x:W*.78,y:H*.5,r:Math.min(W,H)*.035,color:'#f3f3f3',vx:0,vy:0}];ball={x:W/2,y:H/2,vx:0,vy:0};score=[0,0];time=0;updateHud();say('سوت آغاز مسابقه به صدا درآمد!');}
+function updateHud(){$('score').textContent=fa(score[0])+' - '+fa(score[1]);$('clock').textContent=fa(String(Math.floor(time/60)).padStart(2,'0'))+':'+fa(String(Math.floor(time%60)).padStart(2,'0'))}
+function say(s){$('comment').textContent='گزارشگر: '+s;commentTimer=4}
+function draw(){ctx.clearRect(0,0,W,H);ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=3;ctx.strokeRect(5,5,W-10,H-10);ctx.beginPath();ctx.moveTo(W/2,5);ctx.lineTo(W/2,H-5);ctx.stroke();ctx.beginPath();ctx.arc(W/2,H/2,H*.14,0,Math.PI*2);ctx.stroke();ctx.strokeRect(5,H*.3,W*.12,H*.4);ctx.strokeRect(W*.88,H*.3,W*.12,H*.4);
+players.forEach((p,i)=>{ctx.beginPath();ctx.fillStyle=p.color;ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#111';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold '+(p.r*.9)+'px Arial';ctx.textAlign='center';ctx.fillText(i?'۲':'۱',p.x,p.y+p.r*.32)});
+ctx.beginPath();ctx.fillStyle='#fff';ctx.arc(ball.x,ball.y,Math.min(W,H)*.018,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#222';ctx.stroke();}
+function move(p,dx,dy){let s= Math.min(W,H)*.42;p.x=Math.max(p.r+5,Math.min(W-p.r-5,p.x+dx*s/60));p.y=Math.max(p.r+5,Math.min(H-p.r-5,p.y+dy*s/60))}
+function frame(ts){let dt=Math.min((ts-last)/1000||0,.04);last=ts;if(running){time+=dt;let p=players[0],q=players[1];let x=(keys.d?1:0)-(keys.a?1:0),y=(keys.s?1:0)-(keys.w?1:0);move(p,x,y);
+if($('mode').value==='pvp'){move(q,(keys.ArrowRight?1:0)-(keys.ArrowLeft?1:0),(keys.ArrowDown?1:0)-(keys.ArrowUp?1:0));}else{let dx=ball.x-q.x,dy=ball.y-q.y,d=Math.hypot(dx,dy)||1;move(q,dx/d*.68,dy/d*.68)}
+[ [p,keys[' ']], [q,keys.Enter] ].forEach(([pl,shot])=>{let d=Math.hypot(ball.x-pl.x,ball.y-pl.y);if(d<pl.r+Math.min(W,H)*.035){let a=Math.atan2(ball.y-pl.y,ball.x-pl.x);ball.vx+=Math.cos(a)*.7;ball.vy+=Math.sin(a)*.7;if(shot){ball.vx+=Math.cos(a)*8;ball.vy+=Math.sin(a)*8;say('چه ضربه‌ای! توپ با قدرت به سمت دروازه می‌رود!')}}});
+ball.x+=ball.vx;ball.y+=ball.vy;ball.vx*=.985;ball.vy*=.985;if(ball.y<12||ball.y>H-12)ball.vy*=-.8;
+if(ball.x<7){if(ball.y>H*.35&&ball.y<H*.65){score[1]++;say('گوووول! چه گل زیبایی!');setupBall()}else{ball.x=15;ball.vx=Math.abs(ball.vx)}}if(ball.x>W-7){if(ball.y>H*.35&&ball.y<H*.65){score[0]++;say('گلللل! توپ وارد دروازه شد!');setupBall()}else{ball.x=W-15;ball.vx=-Math.abs(ball.vx)}}
+if(time>=180){running=false;say('پایان مسابقه! نتیجه نهایی ثبت شد.')}updateHud();if(commentTimer>0)commentTimer-=dt}
+draw();requestAnimationFrame(frame)}
+function setupBall(){ball={x:W/2,y:H/2,vx:0,vy:0};updateHud()}
+function start(){ $('leftName').textContent=$('team1').value;$('rightName').textContent=$('team2').value;setup();running=true}
+$('start').onclick=start;$('reset').onclick=()=>{setup();running=false;say('مسابقه آماده شروع است.')};
+window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();keys[e.key]=true});
+window.addEventListener('keyup',e=>keys[e.key]=false);
+document.querySelectorAll('[data-key]').forEach(b=>{let k=b.dataset.key;const on=e=>{e.preventDefault();keys[k]=true},off=e=>{e.preventDefault();keys[k]=false};b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointerleave',off);b.addEventListener('pointercancel',off)});
+new ResizeObserver(size).observe(c);size();setup();requestAnimationFrame(frame);
+})();
+</script></body></html>
