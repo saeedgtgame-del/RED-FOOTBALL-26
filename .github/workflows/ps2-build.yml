@@ -1,0 +1,21 @@
+name: Build RED FOOTBALL 26 PS2
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build PS2 ELF with PS2DEV
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/src" -w /src ps2dev/ps2dev:latest sh -c "apk add --no-cache make && make"
+      - name: Upload PS2 ELF
+        uses: actions/upload-artifact@v4
+        with:
+          name: RED-FOOTBALL-26-PS2
+          path: RED_FOOTBALL_26.ELF
+          if-no-files-found: error
