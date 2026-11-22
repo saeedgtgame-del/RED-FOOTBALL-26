@@ -76,8 +76,7 @@ void nx_update_player(NX_Scene *scene, const NX_Input *in, float dt) {
         p->velocity.x+=(targetX-p->velocity.x)*blend;
         p->velocity.z+=(targetZ-p->velocity.z)*blend;
     }
-    p->transform.position.x += p->velocity.x*dt;
-    p->transform.position.z += p->velocity.z*dt;
+    nx_physics_integrate(p,nx_vec3(0.0f,0.0f,0.0f),0.0f,dt);
 }
 
 void nx_camera_init(NX_Camera *c, float distance, float height) {
@@ -101,6 +100,75 @@ void nx_camera_follow(NX_Camera *c, const NX_Entity *target, float dt) {
     c->position.y+=(desired.y-c->position.y)*a;
     c->position.z+=(desired.z-c->position.z)*a;
     c->target=target->transform.position;
+}
+
+
+/* ---------- NEXON reusable math and physics ---------- */
+NX_Vec3 nx_vec3(float x, float y, float z) {
+    NX_Vec3 v; v.x=x; v.y=y; v.z=z; return v;
+}
+NX_Vec3 nx_vec3_add(NX_Vec3 a, NX_Vec3 b) {
+    return nx_vec3(a.x+b.x,a.y+b.y,a.z+b.z);
+}
+NX_Vec3 nx_vec3_sub(NX_Vec3 a, NX_Vec3 b) {
+    return nx_vec3(a.x-b.x,a.y-b.y,a.z-b.z);
+}
+NX_Vec3 nx_vec3_scale(NX_Vec3 v, float s) {
+    return nx_vec3(v.x*s,v.y*s,v.z*s);
+}
+float nx_vec3_dot(NX_Vec3 a, NX_Vec3 b) {
+    return a.x*b.x+a.y*b.y+a.z*b.z;
+}
+float nx_vec3_length(NX_Vec3 v) {
+    return sqrtf(nx_vec3_dot(v,v));
+}
+
+/* Semi-implicit Euler integration: compact and suitable for PS2. */
+void nx_physics_integrate(NX_Entity *e, NX_Vec3 acceleration,
+                          float gravity, float dt) {
+    if (!e || !e->active) return;
+    dt=nx_clamp_dt(dt);
+    e->velocity.x += acceleration.x*dt;
+    e->velocity.y += (acceleration.y-gravity)*dt;
+    e->velocity.z += acceleration.z*dt;
+    e->transform.position.x += e->velocity.x*dt;
+    e->transform.position.y += e->velocity.y*dt;
+    e->transform.position.z += e->velocity.z*dt;
+}
+
+/* Broadly reusable sphere test; entity radii are world-space units. */
+int nx_collision_sphere(NX_Entity *a, NX_Entity *b) {
+    NX_Vec3 d;
+    float r;
+    if (!a || !b || !a->active || !b->active) return 0;
+    d=nx_vec3_sub(a->transform.position,b->transform.position);
+    r=a->radius+b->radius;
+    return nx_vec3_dot(d,d) <= r*r;
+}
+
+/* Positional correction plus a simple normal impulse. */
+void nx_collision_resolve_spheres(NX_Entity *a, NX_Entity *b, float restitution) {
+    NX_Vec3 d;
+    float dist, sum, penetration, relative, impulse;
+    if (!nx_collision_sphere(a,b)) return;
+    d=nx_vec3_sub(a->transform.position,b->transform.position);
+    dist=nx_vec3_length(d);
+    sum=a->radius+b->radius;
+    if (dist < 0.0001f) { d=nx_vec3(1.0f,0.0f,0.0f); dist=1.0f; }
+    d=nx_vec3_scale(d,1.0f/dist);
+    penetration=sum-dist;
+    a->transform.position=nx_vec3_add(a->transform.position,nx_vec3_scale(d,penetration*0.5f));
+    b->transform.position=nx_vec3_sub(b->transform.position,nx_vec3_scale(d,penetration*0.5f));
+    relative=(a->velocity.x-b->velocity.x)*d.x+
+             (a->velocity.y-b->velocity.y)*d.y+
+             (a->velocity.z-b->velocity.z)*d.z;
+    if (relative < 0.0f) {
+        if (restitution<0.0f) restitution=0.0f;
+        if (restitution>1.0f) restitution=1.0f;
+        impulse=-(1.0f+restitution)*relative*0.5f;
+        a->velocity.x+=d.x*impulse; a->velocity.y+=d.y*impulse; a->velocity.z+=d.z*impulse;
+        b->velocity.x-=d.x*impulse; b->velocity.y-=d.y*impulse; b->velocity.z-=d.z*impulse;
+    }
 }
 
 void nx_time_step(NX_Time *t, float dt) {
