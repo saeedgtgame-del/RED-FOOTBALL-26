@@ -65,4 +65,16 @@ void nx_camera_init(NX_Camera *camera, float distance, float height);
 void nx_camera_follow(NX_Camera *camera, const NX_Entity *target, float dt);
 void nx_time_step(NX_Time *time, float dt);
 
+/* Reusable math and physics layer for every game built on NEXON. */
+NX_Vec3 nx_vec3(float x, float y, float z);
+NX_Vec3 nx_vec3_add(NX_Vec3 a, NX_Vec3 b);
+NX_Vec3 nx_vec3_sub(NX_Vec3 a, NX_Vec3 b);
+NX_Vec3 nx_vec3_scale(NX_Vec3 v, float s);
+float nx_vec3_dot(NX_Vec3 a, NX_Vec3 b);
+float nx_vec3_length(NX_Vec3 v);
+void nx_physics_integrate(NX_Entity *entity, NX_Vec3 acceleration,
+                          float gravity, float dt);
+int nx_collision_sphere(NX_Entity *a, NX_Entity *b);
+void nx_collision_resolve_spheres(NX_Entity *a, NX_Entity *b, float restitution);
+
 #endif
