@@ -73,7 +73,8 @@ static float clampf(float v,float lo,float hi){return v<lo?lo:(v>hi?hi:v);}
 static float dist2(float x,float z,float a,float b){float dx=x-a,dz=z-b;return dx*dx+dz*dz;}
 static void resetPositions(void){
  int t,i;for(t=0;t<2;t++)for(i=0;i<TEAM_N;i++){NX_Entity *e=&scene.entities[playerIds[t][i]];e->transform.position.x=homeX[i];e->transform.position.z=t?homeZB[i]:homeZA[i];e->velocity.x=0;e->velocity.z=0;}
- ballX=0;ballZ=0;ballY=1.2f;ballVX=ballVZ=ballVY=0;selected=9;\n {NX_Entity *b=&scene.entities[ballId];b->transform.position.x=0;b->transform.position.y=ballY;b->transform.position.z=0;b->velocity=nx_vec3(0,0,0);}
+ ballX=0;ballZ=0;ballY=1.2f;ballVX=ballVZ=ballVY=0;selected=9;
+ {NX_Entity *b=&scene.entities[ballId];b->transform.position.x=0;b->transform.position.y=ballY;b->transform.position.z=0;b->velocity=nx_vec3(0,0,0);}
 }
 static void initGame(void){
  int t,i;NX_Vec3 p;nx_init(&scene);memset(&clockNX,0,sizeof(clockNX));
