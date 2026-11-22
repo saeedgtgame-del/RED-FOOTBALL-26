@@ -138,7 +138,7 @@ static void updateGame(void){
 }
 static void render(void){
  static packet_t *packets[2]={0,0};static int ctx=0;static VECTOR *tmp=0;static xyz_t *xyz=0;static color_t *rgbaq=0;static prim_t prim;static color_t base;static MATRIX vs;
- qword_t *q,*tag;int i,t;VECTOR p,r;
+ qword_t *q,*tag;int i,t;VECTOR p,r;char sa[2],sb[2];
  if(!packets[0]){packets[0]=packet_init(32768,PACKET_NORMAL);packets[1]=packet_init(32768,PACKET_NORMAL);tmp=memalign(128,sizeof(VECTOR)*vertex_count);xyz=memalign(128,sizeof(xyz_t)*vertex_count);rgbaq=memalign(128,sizeof(color_t)*vertex_count);prim.type=PRIM_TRIANGLE;prim.shading=PRIM_SHADE_GOURAUD;prim.mapping=DRAW_DISABLE;prim.fogging=DRAW_DISABLE;prim.blending=DRAW_DISABLE;prim.antialiasing=DRAW_ENABLE;prim.mapping_type=PRIM_MAP_ST;prim.colorfix=PRIM_UNFIXED;base.r=128;base.g=128;base.b=128;base.a=128;base.q=1.0f;create_view_screen(vs,graph_aspect_ratio(),-3,3,-2.4f,2.4f,1,1200);}
  cameraPos[0]=camX;cameraPos[1]=camY;cameraPos[2]=camZ;cameraRot[0]=0.58f;cameraRot[1]=0;cameraRot[2]=0;
  tag=packets[ctx]->data;q=tag+1;q=draw_disable_tests(q,0,&zbuf);q=draw_clear(q,0,2048-SW/2,2048-SH/2,SW,SH,20,75,45);q=draw_enable_tests(q,0,&zbuf);
@@ -168,7 +168,7 @@ static void render(void){
  q=rect(q,0,0,SW,48,7,12,20);q=rect(q,0,SH-42,SW,42,7,12,20);
  q=text(q,18,14,2,"RED FOOTBALL 26",245,245,245);
  q=rect(q,270,8,100,31,30,35,45);q=text(q,283,17,2,"RED",235,70,70);q=text(q,330,17,2,"BLUE",90,160,245);
- q=text(q,385,15,3,"0",255,255,255);q=text(q,414,15,3,"-",255,220,80);q=text(q,440,15,3,"0",255,255,255);
+ sa[0]=(char)('0'+(scoreA%10));sa[1]=0;sb[0]=(char)('0'+(scoreB%10));sb[1]=0;q=text(q,385,15,3,sa,255,255,255);q=text(q,414,15,3,"-",255,220,80);q=text(q,440,15,3,sb,255,255,255);
  {int sec=(int)(matchSeconds-matchClock);if(sec<0)sec=0;char tm[8];tm[0]='0'+(sec/60)/10;tm[1]='0'+(sec/60)%10;tm[2]=':';tm[3]='0'+(sec%60)/10;tm[4]='0'+(sec%60)%10;tm[5]=0;q=text(q,520,17,2,tm,245,245,245);}
  q=text(q,16,SH-28,1,"LEFT STICK MOVE  SQUARE PASS  CIRCLE SHOOT  TRIANGLE SWITCH",205,215,225);
  if(!started&&!gameOver){q=rect(q,SW/2-175,SH/2-65,350,130,8,12,20);q=text(q,SW/2-128,SH/2-35,3,"RED FOOTBALL",245,245,245);q=text(q,SW/2-112,SH/2+7,2,"PRESS START TO PLAY",255,205,75);}
