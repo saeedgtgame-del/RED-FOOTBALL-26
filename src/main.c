@@ -73,12 +73,12 @@ static float clampf(float v,float lo,float hi){return v<lo?lo:(v>hi?hi:v);}
 static float dist2(float x,float z,float a,float b){float dx=x-a,dz=z-b;return dx*dx+dz*dz;}
 static void resetPositions(void){
  int t,i;for(t=0;t<2;t++)for(i=0;i<TEAM_N;i++){NX_Entity *e=&scene.entities[playerIds[t][i]];e->transform.position.x=homeX[i];e->transform.position.z=t?homeZB[i]:homeZA[i];e->velocity.x=0;e->velocity.z=0;}
- ballX=0;ballZ=0;ballY=1.2f;ballVX=ballVZ=ballVY=0;selected=9;
+ ballX=0;ballZ=0;ballY=1.2f;ballVX=ballVZ=ballVY=0;selected=9;\n {NX_Entity *b=&scene.entities[ballId];b->transform.position.x=0;b->transform.position.y=ballY;b->transform.position.z=0;b->velocity=nx_vec3(0,0,0);}
 }
 static void initGame(void){
  int t,i;NX_Vec3 p;nx_init(&scene);memset(&clockNX,0,sizeof(clockNX));
  for(t=0;t<2;t++)for(i=0;i<TEAM_N;i++){p.x=homeX[i];p.y=0;p.z=t?homeZB[i]:homeZA[i];playerIds[t][i]=nx_spawn(&scene,t?NX_ENTITY_NPC:NX_ENTITY_PLAYER,p);scene.entities[playerIds[t][i]].radius=2.0f;}
- nx_set_player(&scene,playerIds[0][9]);p.x=0;p.y=1;p.z=0;ballId=nx_spawn(&scene,NX_ENTITY_PROP,p);resetPositions();
+ nx_set_player(&scene,playerIds[0][9]);p.x=0;p.y=1;p.z=0;ballId=nx_spawn(&scene,NX_ENTITY_PROP,p);scene.entities[ballId].radius=1.15f;resetPositions();
 }
 static void initPad(void){if(padInit(0)==1&&padPortOpen(0,0,padBuf)){padSetMainMode(0,0,PAD_MMODE_DUALSHOCK,PAD_MMODE_LOCK);padOK=1;}}
 static void updatePad(void){
@@ -118,10 +118,29 @@ static void updateAI(float dt){
   }
  }
 }
+static void updatePlayerCollisions(void){
+ int t,i,j;
+ /* NEXON sphere contacts keep teammates from occupying the same space. */
+ for(t=0;t<2;t++)for(i=0;i<TEAM_N;i++)for(j=i+1;j<TEAM_N;j++)
+  nx_collision_resolve_spheres(&scene.entities[playerIds[t][i]],&scene.entities[playerIds[t][j]],0.12f);
+}
 static void updateBall(float dt){
- int t,i;float dx,dz,d,len;NX_Entity *e;
- for(t=0;t<2;t++)for(i=0;i<TEAM_N;i++){e=&scene.entities[playerIds[t][i]];dx=ballX-e->transform.position.x;dz=ballZ-e->transform.position.z;d=dx*dx+dz*dz;if(d<13.0f){len=sqrtf(d)+.01f;ballVX+=dx/len*4.2f;ballVZ+=dz/len*4.2f;if(t==0&&i==selected){ballVX+=e->velocity.x*.35f;ballVZ+=e->velocity.z*.35f;}}}
- ballX+=ballVX*dt;ballZ+=ballVZ*dt;ballY+=ballVY*dt;ballVY-=18.0f*dt;
+ int t,i;float dx,dz,d,len;NX_Entity *e,*b=&scene.entities[ballId];
+ /* The upgraded NEXON integrator owns the ball's world-space motion and gravity. */
+ b->transform.position.x=ballX;b->transform.position.y=ballY;b->transform.position.z=ballZ;
+ b->velocity=nx_vec3(ballVX,ballVY,ballVZ);
+ nx_physics_integrate(b,nx_vec3(0,0,0),18.0f,dt);
+ ballX=b->transform.position.x;ballY=b->transform.position.y;ballZ=b->transform.position.z;
+ for(t=0;t<2;t++)for(i=0;i<TEAM_N;i++){
+  e=&scene.entities[playerIds[t][i]];
+  if(nx_collision_sphere(b,e)){
+   dx=ballX-e->transform.position.x;dz=ballZ-e->transform.position.z;
+   d=dx*dx+dz*dz;len=sqrtf(d)+.01f;
+   ballVX+=(dx/len)*(t==0&&i==selected?7.0f:4.0f);
+   ballVZ+=(dz/len)*(t==0&&i==selected?7.0f:4.0f);
+   if(t==0&&i==selected){ballVX+=e->velocity.x*.4f;ballVZ+=e->velocity.z*.4f;}
+  }
+ }
  if(ballY<BALL_R){ballY=BALL_R;if(ballVY<0)ballVY=-ballVY*.48f;}
  ballVX*=.986f;ballVZ*=.986f;ballVY*=.96f;
  if(ballX< -FIELD_X+1||ballX>FIELD_X-1){ballX=clampf(ballX,-FIELD_X+1,FIELD_X-1);ballVX=-ballVX*.72f;}
@@ -129,11 +148,13 @@ static void updateBall(float dt){
   if(fabsf(ballX)<9.0f){if(ballZ<0)scoreB++;else scoreA++;resetPositions();}
   else{ballZ=clampf(ballZ,-FIELD_Z,FIELD_Z);ballVZ=-ballVZ*.7f;}
  }
+ b->transform.position.x=ballX;b->transform.position.y=ballY;b->transform.position.z=ballZ;
+ b->velocity=nx_vec3(ballVX,ballVY,ballVZ);
 }
 static void updateGame(void){
  float dt=1.0f/60.0f;if(!started||paused||gameOver)return;
  nx_time_step(&clockNX,dt);matchClock+=dt;
- updateAI(dt);updateBall(dt);
+ updateAI(dt);updatePlayerCollisions();updateBall(dt);
  if(matchClock>=matchSeconds){gameOver=1;started=0;}
 }
 static void render(void){
